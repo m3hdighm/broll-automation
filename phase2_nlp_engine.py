@@ -18,8 +18,8 @@ logger = logging.getLogger("Phase2_SemanticNLPEngine")
 # ==========================================
 class Settings(BaseSettings):
     groq_api_key: str = "dummy_key_for_local_testing"
-    model_name: str = "llama3-70b-8192"
-    use_mock_api: bool = True
+    model_name: str = "openai/gpt-oss-120b"
+    use_mock_api: bool = False
     log_level: str = "INFO"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
@@ -135,14 +135,10 @@ def analyze_transcript(transcript_data: List[Dict[str, Any]]) -> List[BRollTimel
         
         # 3. Construct Prompts
         system_prompt = (
-            "You are an expert AI Video Editor and Narrative Strategist. "
-            "Your task is to analyze the provided timestamped transcript and design a B-Roll timeline. "
-            "1. Group the text into logical sentences and identify visual narrative peaks. "
-            "2. Decide exactly when to insert B-Roll to create a 'Pattern Interrupt' (typically every 3-5 seconds of dialogue) to maximize viewer retention. "
-            "3. For each B-Roll segment, provide a highly descriptive 'visual_prompt' and decide if the 'source' should be 'stock' or 'generation'. "
-            "4. You MUST output a valid JSON object containing a single key 'timeline' which holds an array of objects. "
-            "Each object must have: 'start_time' (HH:MM:SS), 'end_time' (HH:MM:SS), 'visual_prompt' (string), and 'source' ('stock' or 'generation'). "
-            "Do not include any markdown formatting, preamble, or conversational text. Output ONLY raw JSON."
+            "You are an expert AI Video Editor. Analyze the timestamped transcript. "
+            "1. Find narrative peaks to insert B-Rolls for viewer retention. "
+            "2. The 'visual_prompt' MUST NOT be a full sentence. It MUST be 2 to 4 highly searchable keywords for stock footage websites (e.g., 'business meeting modern', 'typing keyboard coffee', 'server room lights'). "
+            "3. Output ONLY a JSON object containing a 'timeline' array with 'start_time' (HH:MM:SS), 'end_time' (HH:MM:SS), 'visual_prompt', and 'source' ('stock')."
         )
         
         user_prompt = f"Transcript Data:\n{formatted_transcript}"

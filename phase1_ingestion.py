@@ -151,7 +151,7 @@ def transcribe_with_groq(wav_path: Path, use_mock: bool = False) -> List[Dict[st
         if use_mock:
             transcription = mock_groq_transcription()
         else:
-            client = Groq(api_key=settings.groq_api_key)
+            client = Groq(api_key=settings.groq_api_key, timeout=300.0)
             with open(wav_path, "rb") as audio_file:
                 transcription = client.audio.transcriptions.create(
                     file=(wav_path.name, audio_file.read()),
