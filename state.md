@@ -20,3 +20,11 @@ Completed: Phase 2 (`phase2_nlp_engine.py`)
     "source": "stock" | "generation"
   }
 ]
+Completed: Phase 3 (`phase3_asset_procurement.py`)
+
+# Output Contract for Next Phase (Phase 3 Output):
+{
+  "manifest": {
+    "HH:MM:SS": "absolute/path/to/downloaded/file.mp4"
+  }
+}

@@ -4,3 +4,5 @@ __pycache__/
 temp_audio/
 *.wav
 *.mp4
+final_rendered_portfolio.mp4
+downloads/
