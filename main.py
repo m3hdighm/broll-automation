@@ -20,6 +20,7 @@ try:
     from phase1_ingestion import extract_audio_with_ffmpeg, transcribe_with_groq
     from phase2_nlp_engine import analyze_transcript
     from phase3_asset_procurement import fetch_stock_video
+    from phase3b_matting import generate_alpha_matte
     from phase4_final_assembly import assemble_final_video
 except ImportError as e:
     print(f"CRITICAL ERROR: Missing phase module. Ensure all phase scripts are in the directory. Details: {e}")
@@ -115,13 +116,20 @@ def run_pipeline(input_video_path: Path) -> None:
                 return
 
             # =========================================================
+            # PHASE 3B: Depth Matting (Rotoscoping)
+            # =========================================================
+            logger.info("=== PHASE 3B: DEPTH MATTING ===")
+            matte_video_path = generate_alpha_matte(input_video_path)
+
+            # =========================================================
             # PHASE 4: Final Assembly
             # =========================================================
             logger.info("=== PHASE 4: FINAL ASSEMBLY ===")
-            output_video_path = input_video_path.with_name(f"{input_video_path.stem}_with_broll.mp4")
+            output_video_path = input_video_path.with_name(f"{input_video_path.stem}_elite_broll.mp4")
             
             assemble_final_video(
                 main_video_path=input_video_path,
+                matte_video_path=matte_video_path, # پارامتر جدید
                 manifest=valid_manifest,
                 output_path=output_video_path
             )
