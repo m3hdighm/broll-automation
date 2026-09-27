@@ -17,10 +17,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # Phase Imports (Corrected based on actual function names)
 # ---------------------------------------------------------------------------
 try:
+    from phase5_typography import generate_ass_subtitles
     from phase1_ingestion import extract_audio_with_ffmpeg, transcribe_with_groq
     from phase2_nlp_engine import analyze_transcript
     from phase3_asset_procurement import fetch_stock_video
-    from phase3b_matting import generate_alpha_matte
     from phase4_final_assembly import assemble_final_video
 except ImportError as e:
     print(f"CRITICAL ERROR: Missing phase module. Ensure all phase scripts are in the directory. Details: {e}")
@@ -52,7 +52,7 @@ logger = logging.getLogger("BRollPipeline")
 # ---------------------------------------------------------------------------
 # Orchestration Engine
 # ---------------------------------------------------------------------------
-def run_pipeline(input_video_path: Path) -> None:
+def run_pipeline(input_video_path: Path, video_lang: str = 'en') -> None:
     """Master orchestration function to execute the B-Roll pipeline."""
     if not input_video_path.exists():
         logger.error(f"Input video not found at path: {input_video_path}")
@@ -76,7 +76,12 @@ def run_pipeline(input_video_path: Path) -> None:
             )
             
             logger.info("Transcribing audio...")
-            transcript_data = transcribe_with_groq(wav_path=wav_path, use_mock=False)
+            # تزریق قطعی زبان به موتور Groq Whisper
+            transcript_data = transcribe_with_groq(
+                wav_path=wav_path, 
+                language=video_lang, 
+                use_mock=False
+            )
             
             if not transcript_data:
                 raise ValueError("Phase 1 Failed: Transcript data is empty.")
@@ -116,11 +121,21 @@ def run_pipeline(input_video_path: Path) -> None:
                 return
 
             # =========================================================
-            # PHASE 3B: Depth Matting (Rotoscoping)
+            # PHASE 5: Elite Karaoke Typography Data (.ASS Format)
             # =========================================================
-            logger.info("=== PHASE 3B: DEPTH MATTING ===")
-            matte_video_path = generate_alpha_matte(input_video_path)
-
+            logger.info(f"=== PHASE 5: ELITE KARAOKE TYPOGRAPHY (Lang: {video_lang.upper()}) ===")
+            
+            # استخراج مستقل فایل صوتی سبک برای جلوگیری از کرش متغیرها
+            audio_path = input_video_path.with_suffix('.wav')
+            if not audio_path.exists():
+                import subprocess
+                subprocess.run(
+                    ["static_ffmpeg", "-y", "-i", str(input_video_path), "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1", str(audio_path)],
+                    check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                )
+            
+            words_ass_path = input_video_path.with_name(f"{input_video_path.stem}_karaoke.ass")
+            generate_ass_subtitles(audio_path, words_ass_path, video_lang)
             # =========================================================
             # PHASE 4: Final Assembly
             # =========================================================
@@ -129,24 +144,20 @@ def run_pipeline(input_video_path: Path) -> None:
             
             assemble_final_video(
                 main_video_path=input_video_path,
-                matte_video_path=matte_video_path, # پارامتر جدید
                 manifest=valid_manifest,
+                words_ass_path=words_ass_path,  # ارسال فایل ASS
                 output_path=output_video_path
             )
-            
-            logger.info("=== PIPELINE COMPLETE ===")
-            logger.info(f"Final video successfully generated at: {output_video_path}")
 
     except Exception as e:
-        logger.error(f"Pipeline halted due to an error: {e}", exc_info=True)
-        sys.exit(1)
+        logger.error(f"Pipeline halted due to an error: {e}")
 
 # ---------------------------------------------------------------------------
 # CLI Entry Point
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="B-Roll Automation Pipeline Orchestrator",
+        description="Elite B-Roll Automation Pipeline Orchestrator",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
@@ -155,6 +166,15 @@ if __name__ == "__main__":
         required=True,
         help="Path to the input video file (e.g., test_video.mp4)"
     )
+    # اضافه شدن سوئیچ زبان:
+    parser.add_argument(
+        "--lang",
+        type=str,
+        choices=['en', 'fa'],
+        default='en',
+        help="Language of the video (en or fa)"
+    )
     
     args = parser.parse_args()
-    run_pipeline(args.input)
+    # پاس دادن هر دو متغیر به تابع اصلی:
+    run_pipeline(args.input, args.lang)
